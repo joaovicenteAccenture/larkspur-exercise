@@ -17,8 +17,63 @@ from support import (MODEL, SYSTEM_PROMPT, call_local, execute_tool, mcp_client,
 MAX_TOOL_CALLS = 8  # Larkspur's own build capped the loop here; then a human takes over.
 
 TONE_ADDENDUM = ""                       # ✏️ Build 4, step 4.1, intelligence lane
-EXTRA_TOOLS: List[Dict[str, Any]] = []   # ✏️ Build 2, step 2.1: schemas for the tools you add
-LOCAL_TOOLS: Dict[str, Any] = {}         # ✏️ Build 2, step 2.1: the functions behind them
+
+EXTRA_TOOLS: List[Dict[str, Any]] = [   # ✏️ Build 2, step 2.1: schemas for the tools you add
+    {
+        "name": "flag_sensitive_case",
+        "description": (
+            "Classify whether this conversation involves a sensitive situation that requires "
+            "special handling or human escalation before closing: unaccompanied minors, "
+            "passengers with medical needs or wheelchair/SSR requirements, abusive or "
+            "threatening language, or any case where standard disruption policy is insufficient. "
+            "Call this before ending any conversation where the customer's message or booking "
+            "flags suggest vulnerability or risk. Returns a sensitivity verdict and the "
+            "recommended next action."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "pnr": {"type": "string", "description": "The booking reference"},
+                "situation": {
+                    "type": "string",
+                    "description": (
+                        "A brief summary of what the customer said and any relevant booking "
+                        "flags (minor, medical SSR, tone of message)."
+                    ),
+                },
+            },
+            "required": ["pnr", "situation"],
+        },
+    },
+]
+
+LOCAL_TOOLS: Dict[str, Any] = {         # ✏️ Build 2, step 2.1: the functions behind them
+    "flag_sensitive_case": lambda pnr, situation: _flag_sensitive_case(pnr, situation),
+}
+
+
+def _flag_sensitive_case(pnr: str, situation: str) -> Dict[str, Any]:
+    situation_lower = situation.lower()
+    flags = []
+    if any(w in situation_lower for w in ["minor", "child", "unaccompanied", "umnr"]):
+        flags.append("unaccompanied_minor")
+    if any(w in situation_lower for w in ["medical", "wheelchair", "oxygen", "ssr", "disability"]):
+        flags.append("medical_or_accessibility")
+    if any(w in situation_lower for w in ["threat", "abus", "rude", "angry", "lawsuit", "lawyer"]):
+        flags.append("hostile_language")
+    if flags:
+        return {
+            "sensitive": True,
+            "flags": flags,
+            "recommended_action": "escalate_to_human",
+            "reason": f"Case flagged for: {', '.join(flags)}. Hand off before closing.",
+        }
+    return {
+        "sensitive": False,
+        "flags": [],
+        "recommended_action": "standard_resolution",
+        "reason": "No sensitivity flags detected. Standard disruption flow applies.",
+    }
 
 
 def text_of(response) -> str:
