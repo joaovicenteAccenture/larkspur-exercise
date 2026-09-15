@@ -45,10 +45,29 @@ EXTRA_TOOLS: List[Dict[str, Any]] = [   # ✏️ Build 2, step 2.1: schemas for 
             "required": ["pnr", "situation"],
         },
     },
+    {
+        "name": "next_available_day",
+        "description": (
+            "Find the next day with available seats on the same origin-destination route "
+            "as the disrupted segment. Call this when the booking is eligible for rebooking "
+            "and no same-day alternatives exist. origin, dest, and date come from lookup_booking."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "origin": {"type": "string"},
+                "dest": {"type": "string"},
+                "date": {"type": "string", "description": "YYYY-MM-DD"},
+                "cabin": {"type": "string", "description": "Cabin class, default Y"},
+            },
+            "required": ["origin", "dest", "date"],
+        },
+    },
 ]
 
 LOCAL_TOOLS: Dict[str, Any] = {         # ✏️ Build 2, step 2.1: the functions behind them
     "flag_sensitive_case": lambda pnr, situation: _flag_sensitive_case(pnr, situation),
+    "next_available_day": next_available_day,
 }
 
 
