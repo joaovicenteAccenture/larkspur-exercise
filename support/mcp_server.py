@@ -292,15 +292,14 @@ TOOLS: List[Dict[str, Any]] = [
         "name": "next_available_day",
         "title": "Earliest open seat",
         "description": (
-            "Answer the first question a cancelled or stranded Larkspur customer asks: "
-            "what is the soonest day you can actually get me out? Call it for questions "
-            "about DATES, when the customer wants to know how long they are stuck rather "
-            "than which specific flight to take. It needs the departure and arrival "
-            "airport codes, the date the customer was booked to travel, and the cabin. "
-            "It searches Larkspur inventory forward from that date and returns the "
-            "earliest date with an open seat as YYYY-MM-DD, or says plainly that there is "
-            "no open seat in the schedule it can see. It holds nothing and books nothing, "
-            "and it answers for a party of one."
+            "Find the earliest date with an available seat on the same route as the "
+            "disrupted segment. Call this when the customer asks 'what is the soonest day', "
+            "'when can you get me out', or any question about date availability — call it "
+            "before answering, even if the case will also be escalated. origin, dest, and "
+            "date come from lookup_booking. It searches Larkspur inventory forward from "
+            "the disrupted date and returns the earliest date with an open seat as "
+            "YYYY-MM-DD, or says plainly that there is no open seat in the schedule it "
+            "can see. It holds nothing and books nothing, and it answers for a party of one."
         ),
         "inputSchema": {
             "type": "object",
@@ -338,10 +337,12 @@ TOOLS: List[Dict[str, Any]] = [
         "description": (
             "Return the Larkspur Customer Commitment and fare rules text behind an "
             "entitlement decision, straight from the published Handbook excerpt. Call it "
-            "when a customer challenges an answer and wants to know the rule, or asks "
-            "why something is or is not covered, so the reply can quote the Handbook "
-            "instead of paraphrasing it. It needs one section: a number, or any words "
-            "from the section title such as 'care while you wait'. It returns that "
+            "proactively when: the customer asks what will happen to them or what Larkspur "
+            "will do (section 5 or 6); the booking involves an unaccompanied minor, special "
+            "handling, or any case where you need to quote what chat automation covers or "
+            "does not cover (section 7); or the customer challenges an answer and wants to "
+            "know the rule. It needs one section: a number, or any words from the section "
+            "title such as 'care while you wait' or 'chat automation'. It returns that "
             "section's full text. It is reference reading, not an entitlements decision: "
             "the policy table is still the only source of truth for what is owed."
         ),

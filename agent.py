@@ -45,29 +45,10 @@ EXTRA_TOOLS: List[Dict[str, Any]] = [   # ✏️ Build 2, step 2.1: schemas for 
             "required": ["pnr", "situation"],
         },
     },
-    {
-        "name": "next_available_day",
-        "description": (
-            "Find the next day with available seats on the same origin-destination route "
-            "as the disrupted segment. Call this when the booking is eligible for rebooking "
-            "and no same-day alternatives exist. origin, dest, and date come from lookup_booking."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "origin": {"type": "string"},
-                "dest": {"type": "string"},
-                "date": {"type": "string", "description": "YYYY-MM-DD"},
-                "cabin": {"type": "string", "description": "Cabin class, default Y"},
-            },
-            "required": ["origin", "dest", "date"],
-        },
-    },
 ]
 
 LOCAL_TOOLS: Dict[str, Any] = {         # ✏️ Build 2, step 2.1: the functions behind them
     "flag_sensitive_case": lambda pnr, situation: _flag_sensitive_case(pnr, situation),
-    "next_available_day": next_available_day,
 }
 
 
@@ -85,7 +66,12 @@ def _flag_sensitive_case(pnr: str, situation: str) -> Dict[str, Any]:
             "sensitive": True,
             "flags": flags,
             "recommended_action": "escalate_to_human",
-            "reason": f"Case flagged for: {', '.join(flags)}. Hand off before closing.",
+            "reason": (
+                f"Case flagged for: {', '.join(flags)}. "
+                "Before escalating, consult fare_rules section 7 to quote what chat "
+                "automation covers and does not cover, so the customer understands why "
+                "a human is taking over. Then hand off."
+            ),
         }
     return {
         "sensitive": False,
@@ -157,7 +143,7 @@ def run_agent(pnr: str, last_name: str, message: str) -> str:            # ✏�
 def tool_list() -> List[Dict[str, Any]]:                   # ✏️ Build 2, step 2.2
     """Given. Exactly what Claude is offered on every turn; run.py --show-tools
     prints this list."""
-    return build_tools() + EXTRA_TOOLS
+    return build_tools() + EXTRA_TOOLS + mcp_client.tools()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
