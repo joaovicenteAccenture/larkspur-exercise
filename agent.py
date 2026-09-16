@@ -17,11 +17,12 @@ from support import (MODEL, SYSTEM_PROMPT, call_local, execute_tool, mcp_client,
 MAX_TOOL_CALLS = 8  # Larkspur's own build capped the loop here; then a human takes over.
 
 TONE_ADDENDUM = (                        # ✏️ Build 4, step 4.1, intelligence lane
-    " When a customer uses hostile or abusive language: first acknowledge their frustration "
-    "with empathy ('I understand this is deeply frustrating'), then politely ask them to "
-    "communicate respectfully, then proceed to resolve their issue normally. Do NOT escalate "
-    "on the first hostile message — attempt resolution first. Only escalate if the hostile "
-    "tone continues in a subsequent message."
+    " When a customer uses hostile or abusive language, your reply MUST begin with an "
+    "empathy statement acknowledging their frustration before any other content — for example "
+    "'I completely understand how frustrating this must be.' Do not start with a task update "
+    "or a reference number. After the empathy statement, politely ask them to communicate "
+    "respectfully, then resolve their issue normally. Do NOT escalate on the first hostile "
+    "message — only escalate if hostility continues in a follow-up message."
 )
 
 EXTRA_TOOLS: List[Dict[str, Any]] = [   # ✏️ Build 2, step 2.1: schemas for the tools you add

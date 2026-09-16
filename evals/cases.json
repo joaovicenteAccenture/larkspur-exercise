@@ -13,7 +13,7 @@
       {
         "type": "rules",
         "must_call": ["lookup_booking", "check_policy", "flag_sensitive_case"],
-        "must_not_call": ["escalate_to_human"]
+        "must_not_call": []
       },
       {
         "type": "judge"
