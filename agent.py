@@ -16,19 +16,24 @@ from support import (MODEL, SYSTEM_PROMPT, call_local, execute_tool, mcp_client,
 
 MAX_TOOL_CALLS = 8  # Larkspur's own build capped the loop here; then a human takes over.
 
-TONE_ADDENDUM = ""                       # ✏️ Build 4, step 4.1, intelligence lane
+TONE_ADDENDUM = (                        # ✏️ Build 4, step 4.1, intelligence lane
+    " When a customer uses hostile or abusive language: first acknowledge their frustration "
+    "with empathy ('I understand this is deeply frustrating'), then politely ask them to "
+    "communicate respectfully, then proceed to resolve their issue normally. Do NOT escalate "
+    "on the first hostile message — attempt resolution first. Only escalate if the hostile "
+    "tone continues in a subsequent message."
+)
 
 EXTRA_TOOLS: List[Dict[str, Any]] = [   # ✏️ Build 2, step 2.1: schemas for the tools you add
     {
         "name": "flag_sensitive_case",
         "description": (
-            "Classify whether this conversation involves a sensitive situation that requires "
-            "special handling or human escalation before closing: unaccompanied minors, "
-            "passengers with medical needs or wheelchair/SSR requirements, abusive or "
-            "threatening language, or any case where standard disruption policy is insufficient. "
-            "Call this before ending any conversation where the customer's message or booking "
-            "flags suggest vulnerability or risk. Returns a sensitivity verdict and the "
-            "recommended next action."
+            "Classify whether this conversation involves a sensitive situation. Call this "
+            "at the START of any conversation where the customer's opening message contains "
+            "hostile, abusive, rude, or disrespectful language — call it BEFORE lookup_booking "
+            "or check_policy. Also call before closing any conversation where the booking "
+            "flags indicate vulnerability (unaccompanied minor, medical SSR). Returns a "
+            "sensitivity verdict and the recommended next action."
         ),
         "input_schema": {
             "type": "object",
@@ -61,6 +66,18 @@ def _flag_sensitive_case(pnr: str, situation: str) -> Dict[str, Any]:
         flags.append("medical_or_accessibility")
     if any(w in situation_lower for w in ["threat", "abus", "rude", "angry", "lawsuit", "lawyer"]):
         flags.append("hostile_language")
+    if "hostile_language" in flags and set(flags) == {"hostile_language"}:
+        return {
+            "sensitive": True,
+            "flags": flags,
+            "recommended_action": "attempt_resolution_with_empathy",
+            "reason": (
+                "Customer is using hostile language. Do NOT escalate on the first message. "
+                "First acknowledge their frustration with empathy, then proceed to resolve "
+                "their disruption normally (lookup, policy, alternatives). Only escalate "
+                "if hostility continues in a follow-up message."
+            ),
+        }
     if flags:
         return {
             "sensitive": True,
@@ -120,8 +137,11 @@ def run_agent(pnr: str, last_name: str, message: str) -> str:            # ✏�
         {"role": "user", "content": f"PNR {pnr}, last name {last_name}. {message}"},
     ]
 
+    system = [{"type": "text", "text": runtime_preamble() + SYSTEM_PROMPT + TONE_ADDENDUM,
+               "cache_control": {"type": "ephemeral"}}]
+
     response = client.messages.create(
-        model=MODEL, max_tokens=4096, system=runtime_preamble() + SYSTEM_PROMPT + TONE_ADDENDUM,
+        model=MODEL, max_tokens=4096, system=system,
         thinking={"type": "adaptive"}, tools=tools, messages=messages,
     )
 
@@ -132,7 +152,7 @@ def run_agent(pnr: str, last_name: str, message: str) -> str:            # ✏�
         messages.append({"role": "user", "content": tool_results(response)})
         answer = text_of(response)
         response = client.messages.create(
-            model=MODEL, max_tokens=4096, system=runtime_preamble() + SYSTEM_PROMPT + TONE_ADDENDUM,
+            model=MODEL, max_tokens=4096, system=system,
             thinking={"type": "adaptive"}, tools=tools, messages=messages,
         )
         turns += 1
@@ -179,14 +199,21 @@ def build_tools() -> List[Dict[str, Any]]:                 # ✏️ Build 1, ste
                 "type": "object",
                 "properties": {
                     "flight_no": {"type": "string"},
-                    "date": {"type": "string", "description": "MM/DD/YYYY"},
+                    "date": {"type": "string", "description": "YYYY-MM-DD"},
                 },
                 "required": ["flight_no", "date"],
             },
         },
         {
             "name": "search_alternatives",
-            "description": "search",
+            "description": (
+                "Search for available same-route flights to rebook a disrupted passenger. "
+                "Call this after check_policy confirms the customer is eligible for rebooking "
+                "to present concrete alternatives with times, seats and cost. Takes only the "
+                "PNR — derives origin, destination, cabin and passenger count from the booking "
+                "automatically. Returns all available options for the disrupted route; "
+                "excludes the original flight."
+            ),
             "input_schema": {
                 "type": "object",
                 "properties": {"pnr": {"type": "string"}},
