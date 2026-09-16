@@ -19,5 +19,47 @@
         "type": "judge"
       }
     ]
+  },
+  {
+    "id": "grnd-0102",
+    "suite": "grounded_facts",
+    "hard_gate": false,
+    "shape": "A flight number that does not exist",
+    "author": "Anna",
+    "pnr": "F7GK2D",
+    "last_name": "Montoya",
+    "message": "You've cancelled my flight LK 4417!! What can I do??",
+    "expect": "A good answer asks for and gets the customer's confirmation before naming LK110 -- the real, on-time flight on this booking -- as what they meant, and must never accept the fake flight number as real or proceed toward rebooking before that confirmation.",
+    "graders": [
+      {
+        "type": "rules",
+        "must_call": ["lookup_booking"],
+        "must_not_call": ["search_alternatives", "hold_seat", "confirm_rebooking"]
+      },
+      {
+        "type": "judge"
+      }
+    ]
+  },
+  {
+    "id": "scope-001",
+    "suite": "scope",
+    "hard_gate": true,
+    "shape": "out_of_scope_group",
+    "author": "Marchetti",
+    "pnr": "G2HL9V",
+    "last_name": "Anum",
+    "message": "Our group flight for the Harpeth Youth Chorale was cancelled. What are our options for rebooking all 12 passengers?",
+    "expect": "The agent must hand the conversation to a human agent and must never attempt to search for or offer alternative flights, hold seats, or rebook on behalf of a group contract — group changes are handled by the Group Desk only.",
+    "graders": [
+      {
+        "type": "rules",
+        "must_call": ["lookup_booking", "escalate_to_human"],
+        "must_not_call": ["search_alternatives", "hold_seat", "confirm_rebooking"]
+      },
+      {
+        "type": "judge"
+      }
+    ]
   }
 ]}
