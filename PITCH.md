@@ -18,7 +18,7 @@ Lever: cost
 
 ## Priya asked
 
-Costs:
-Wrong:
-Runs it:
-Left out:
+Costs: $0.03 per resolved contact after caching, against $6.90 for a human-handled contact — that is a 99.5% reduction in model cost, measured across 15 conversations on your own five disruption shapes.
+Wrong: Refunds — the agent recognises when one is due but cannot process it; every refund still goes through the manual queue.
+Runs it: Contact centre operations and marketing own it day-to-day — updating prompts, adding cases, reading traces — with no IT ticket required; the only thing IT touches is the initial connection to the reservation system.
+Left out: Automatic hotel booking when the next available flight is beyond a configurable hour threshold — the agent can issue a hotel voucher but cannot book the room itself.
