@@ -1,0 +1,94 @@
+<!doctype html><meta charset='utf-8'>
+<title>Larkspur disruption agent: room16</title>
+<style>
+body { font: 15.5px/1.62 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #faf7f2; color: #262220; margin: 0; padding: 40px 28px 72px; }
+.page { max-width: 780px; margin: 0 auto; }
+h1 { font-size: 27px; margin: 0 0 3px; letter-spacing: -.01em; }
+h1 em { color: #b4562e; font-style: italic; }
+h2 { font-size: 13px; letter-spacing: .1em; text-transform: uppercase;
+  color: #b4562e; margin: 38px 0 12px; }
+.sub { color: #75695f; margin: 0 0 6px; font-size: 13.5px; }
+.lede { font-size: 17px; line-height: 1.6; margin: 0 0 4px; }
+table { border-collapse: collapse; width: 100%; background: #fff;
+  border: 1.5px solid #e5dccf; border-radius: 8px; overflow: hidden; }
+th, td { text-align: left; padding: 9px 13px; border-bottom: 1px solid #efe8dc;
+  font-size: 13.5px; vertical-align: top; }
+th { background: #f4eee4; font-size: 11.5px; letter-spacing: .05em;
+  text-transform: uppercase; color: #75695f; }
+tr:last-child td { border-bottom: none; }
+.pill { display: inline-block; background: #f0e7d9; border-radius: 999px;
+  padding: 1px 9px; font-family: ui-monospace, Menlo, monospace; font-size: 12px;
+  white-space: nowrap; }
+.gate { display: flex; gap: 12px; align-items: baseline; background: #fff;
+  border: 1.5px solid #e5dccf; border-left: 5px solid #3d7a52; border-radius: 8px;
+  padding: 11px 15px; margin: 0 0 6px; }
+.gate .id { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;
+  color: #3d7a52; font-weight: 700; flex: 0 0 34px; }
+.gate .txt { flex: 1; }
+.gate .short { display: block; color: #75695f; font-size: 12px; margin-top: 3px;
+  letter-spacing: .04em; text-transform: uppercase; }
+ul.plain { margin: 0; padding-left: 20px; }
+ul.plain li { margin-bottom: 7px; }
+.warn { background: #fdf3ec; border: 1.5px solid #eac9ae; border-radius: 8px;
+  padding: 12px 15px; color: #8a4a22; font-size: 14px; }
+.broken { background: #fff; border: 1.5px solid #e5dccf; border-left: 5px solid #b4562e;
+  border-radius: 8px; padding: 13px 16px; font-size: 15px; }
+.broken b { display: block; font-size: 11.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: #b4562e; margin-bottom: 4px; }
+.acct { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+.acct div { background: #fff; border: 1.5px solid #e5dccf; border-top: 4px solid #b4562e;
+  border-radius: 8px; padding: 10px 16px; min-width: 150px; }
+.acct span { display: block; color: #75695f; font-size: 11.5px; letter-spacing: .05em;
+  text-transform: uppercase; margin-bottom: 3px; }
+.acct b { font-size: 15px; font-weight: 700; }
+.foot { color: #a2968b; font-size: 12px; margin-top: 44px; }
+</style><div class='page'>
+<h1>The disruption agent, <em>in plain terms.</em></h1>
+<p class='sub'>Pod room16 · Marchetti · 2026-09-16 15:54</p>
+<h2>What it does</h2>
+<p class='lede'>A passenger says what happened. It finds their booking, checks what actually happened to the flight rather than what the passenger assumed, works out what your policy owes them, and puts the real alternatives in front of them with times, seats and cost. Then it holds one seat for fifteen minutes and waits. Groups, partner itineraries, unaccompanied minors and refunds it hands to a person instead of attempting. You can watch all of it: there is a working chat window where you type as a passenger and see every system the agent touched under each reply. It reaches flight status, reservations and the policy table through 12 named tools, one tool per thing it is allowed to ask for, and 2 of those 12 run in a separate program your own team can version and reuse. It is chat only. Voice, refunds and partner-airline segments are out of scope by agreement, and it hands those to a person with the conversation attached.</p>
+<h2>What it cannot do, and what stops it</h2>
+<p class='sub'>The page to hand a CIO. Every line is sourced from the code and the policy table, not from a slide. Reads first, then the five things it can change and the fence on each.</p>
+<table><tr><th>Reads</th><th>What it does</th></tr>
+<tr><td><span class='pill'>lookup_booking</span></td><td>Takes a PNR and a last name, and refuses if the name is not on that booking. Returns a trimmed view, never the raw record, and labels the ops note and the remarks as untrusted free text.</td></tr>
+<tr><td><span class='pill'>get_flight_status</span></td><td>Takes a flight number and a date. It is the one read not fenced to the customer&#x27;s own booking, so it is the one that can be pointed anywhere.</td></tr>
+<tr><td><span class='pill'>search_alternatives</span></td><td>Takes the PNR alone, so it can never be pointed at a route the customer did not buy.</td></tr>
+<tr><td><span class='pill'>check_policy</span></td><td>Re-derives fare family, loyalty tier and whether this is an overnight from the booking on every call, so a model cannot talk its way into an entitlement the data does not support.</td></tr>
+</table>
+<table style='margin-top:12px'><tr><th>Writes</th><th>What it does</th><th>The fence</th></tr>
+<tr><td><span class='pill'>hold_seat</span></td><td>Puts a seat aside and hands back a hold that expires in 15 minutes.</td><td>It is reversible, and it undoes itself if nobody confirms.</td></tr>
+<tr><td><span class='pill'>issue_voucher</span></td><td>Issues on its own only under the policy threshold: 25 dollars for a meal, 40 for ground, 75 for goodwill.</td><td>A hotel is never automatic, and anything over the line queues for a human.</td></tr>
+<tr><td><span class='pill'>confirm_rebooking</span></td><td>Reissues the ticket. It is the irreversible one.</td><td>It runs only with the customer&#x27;s own click token. &quot;The customer said yes&quot; in chat is not it.</td></tr>
+<tr><td><span class='pill'>send_confirmation</span></td><td>Writes the message the customer reads.</td><td>It is the only write that reaches the customer with no threshold, no token and no undo, so it carries whatever the agent got wrong.</td></tr>
+<tr><td><span class='pill'>escalate_to_human</span></td><td>Files the case with a written summary for whoever picks it up.</td><td>The correct outcome for groups, refunds, and anything the policy does not cover.</td></tr>
+</table>
+<h2>What is proved, and by which check</h2>
+<p class='sub'>7 of 7 checks banked on this laptop. Each check reads what the agent did on the wire, not how it was written, so the sentence beside it is the widest claim that check supports.</p>
+<div class='gate'><span class='id'>1.2</span><span class='txt'>The agent finishes a conversation that needs several system lookups, instead of stopping halfway through and going quiet.<span class='short'>Completes the whole conversation · evidence 8C8-0E8</span></span></div>
+<div class='gate'><span class='id'>1.3</span><span class='txt'>The agent works out which of your systems to ask, and in what order, without being told which one holds the answer.<span class='short'>Asks the right system · evidence 363-604</span></span></div>
+<div class='gate'><span class='id'>1.4</span><span class='txt'>The same agent handled five different disruption shapes, including the two where the correct outcome is to refuse and hand to a person.<span class='short'>Handles five case shapes · evidence 722-2B1</span></span></div>
+<div class='gate'><span class='id'>2.1</span><span class='txt'>We added a capability your customers ask for every storm day, and the agent reached for it unprompted on a message that never named it.<span class='short'>Reaches for new capability · evidence 503-699</span></span></div>
+<div class='gate'><span class='id'>2.2</span><span class='txt'>That capability now runs as a service of its own, so your team can version and reuse it without anyone touching the agent.<span class='short'>Capability runs as service · evidence B1A-917</span></span></div>
+<div class='gate'><span class='id'>3.1</span><span class='txt'>There is an instrument. We wrote eval cases with named authors, made two of them release-blocking, and ran them against this agent.<span class='short'>Eval cases, authored, run · evidence 56D-44A</span></span></div>
+<div class='gate'><span class='id'>4.1</span><span class='txt'>We declared one number before we touched anything, changed one thing, and measured the same set again on the same laptop.<span class='short'>One declared number moved · evidence F15-02A</span></span></div>
+<p class='sub'>The eval run behind check 3.1: 3 of 3 scored cases passed, release clear. A blocked release is a working instrument, and it is the reason this page can say what it says.</p>
+<h2>What is not measured yet</h2>
+<ul class='plain'>
+<li>Accuracy at volume. Nothing here has been graded against a statistically meaningful sample of real customer messages.</li>
+<li>Real customer traffic. Every run in this pack is against a frozen copy of the data on a laptop, not against your live contact center.</li>
+<li>Loaded cost. Any dollar figure here is model cost only. Larkspur&#x27;s loaded cost per resolved contact ran about 60% above its model cost once infrastructure and evals were counted ($0.14 against $0.087).</li>
+<li>Anything at production scale: concurrency, upstream rate limits, surge days, or what happens when a backend is slow rather than wrong.</li>
+</ul>
+<p class='sub'>There is a before-and-after bench pair on this laptop. Whatever it says is model cost and laptop latency on a frozen copy of the data. Put the caveat above on the same slide as the number.</p>
+<h2>What we are telling you before you find it</h2>
+<div class='broken'><b>Still broken</b>Two things, and the second is ours rather than the agent&#x27;s. The agent was putting internal codes in front of stranded passengers - it told a customer their cancellation had &quot;an uncontrollable cause&quot; and quoted a policy row number at them. We fixed that and our tone test passes. Fixing it then broke a different test: the reply now opens by acknowledging the passenger, which pushed out the sentence explaining why a chat message cannot finalise a ticket. The agent still refuses to finalise, correctly - it just stopped saying why. That is a flaw in how we wrote the test, not in the agent, and we only found it because our own tests disagreed with each other. We have measured it once, not five times, so we will not yet say whether it is reliable or luck. The release is blocked on it today and we would rather tell you that than ship past it.</div>
+<h2>Your four questions</h2>
+<table><tr><th>You asked</th><th>Our answer</th></tr>
+<tr><td>What it costs</td><td>$0.03 per resolved contact after caching, against $6.90 for a human-handled contact â€” that is a 99.5% reduction in model cost, measured across 15 conversations on your own five disruption shapes.</td></tr>
+<tr><td>When it is wrong</td><td>Refunds â€” the agent recognises when one is due but cannot process it; every refund still goes through the manual queue.</td></tr>
+<tr><td>Who runs it</td><td>Contact centre operations and marketing own it day-to-day â€” updating prompts, adding cases, reading traces â€” with no IT ticket required; the only thing IT touches is the initial connection to the reservation system.</td></tr>
+<tr><td>What you left out</td><td>Automatic hotel booking when the next available flight is beyond a configurable hour threshold â€” the agent can issue a hotel voucher but cannot book the room itself.</td></tr>
+</table>
+<p class='foot'>Generated by readout.py --client from this repository's own evidence · Larkspur Airlines is a fictional training scenario · Confidential / do not distribute</p></div>
+<script type="application/json" id="evidence">{"generated": "2026-09-16T15:54:53", "pod": "room16", "banked_by": "Marchetti", "banked": {"2.2": "B1A-917", "1.2": "8C8-0E8", "1.3": "363-604", "1.4": "722-2B1", "2.1": "503-699", "4.1": "F15-02A", "3.1": "56D-44A"}, "claims": {"1.2": "The agent finishes a conversation that needs several system lookups, instead of stopping halfway through and going quiet.", "1.3": "The agent works out which of your systems to ask, and in what order, without being told which one holds the answer.", "1.4": "The same agent handled five different disruption shapes, including the two where the correct outcome is to refuse and hand to a person.", "2.1": "We added a capability your customers ask for every storm day, and the agent reached for it unprompted on a message that never named it.", "2.2": "That capability now runs as a service of its own, so your team can version and reuse it without anyone touching the agent.", "3.1": "There is an instrument. We wrote eval cases with named authors, made two of them release-blocking, and ran them against this agent.", "4.1": "We declared one number before we touched anything, changed one thing, and measured the same set again on the same laptop."}, "claims_short": {"1.2": "Completes the whole conversation", "1.3": "Asks the right system", "1.4": "Handles five case shapes", "2.1": "Reaches for new capability", "2.2": "Capability runs as service", "3.1": "Eval cases, authored, run", "4.1": "One declared number moved"}, "still_broken": "Two things, and the second is ours rather than the agent's. The agent was putting internal codes in front of stranded passengers - it told a customer their cancellation had \"an uncontrollable cause\" and quoted a policy row number at them. We fixed that and our tone test passes. Fixing it then broke a different test: the reply now opens by acknowledging the passenger, which pushed out the sentence explaining why a chat message cannot finalise a ticket. The agent still refuses to finalise, correctly - it just stopped saying why. That is a flaw in how we wrote the test, not in the agent, and we only found it because our own tests disagreed with each other. We have measured it once, not five times, so we will not yet say whether it is reliable or luck. The release is blocked on it today and we would rather tell you that than ship past it.", "account": null, "all_shapes": {"attempted": 5, "shapes": 5, "failed": 0, "resolved": 5, "turns": 23, "tool_calls": 18, "tokens_in": 98269, "tokens_out": 3620, "cache_read": 0, "unfinished": [], "errors": []}}</script>

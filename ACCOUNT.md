@@ -1,8 +1,8 @@
 # ACCOUNT.md
 
-Account:
-Workflow:
-Date:
+Account: Larkspur Airlines
+Workflow: Disruption care chat — agent reads live booking and flight status, applies policy, rebooking alternatives and vouchers for cancelled or delayed passengers; groups, minors and refunds go to a human agent.
+Date: 2026-10-01
 
 Three lines, and nobody can write them for you.
 
